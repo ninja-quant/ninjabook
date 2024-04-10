@@ -40,4 +40,4 @@ Here are the results:
 To add a better version, create a new file, implementing the same methods as `orderbook.rs` (including tests) and adding to the benchmark `optimal_vs_naive`. Only order books with better performance than `orderbook.rs` will be considered. Lastly, add performance logs to the Pull Request, can just copy paste what `cargo bench` outputs.
 
 
-Any issues and tests are also welcomed. Feel free to reach out at https://twitter.com/ninjaquant_ if you have any questions.
+Any issues and tests are also welcomed. Feel free to reach out at  [https://twitter.com/ninjaquant_](https://twitter.com/ninjaquant_) if you have any questions.
