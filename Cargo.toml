@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 description = "A lightweight and high performance orderbook"
 homepage = "https://github.com/ninja-quant/ninjabook"
-documentation = "https://example.com/documentation"
 repository = "https://github.com/ninja-quant/ninjabook"
 license = "MIT"
 categories = ["algorithms", "data-structures"]
