@@ -1,5 +1,7 @@
 use crate::{event::Event, level::Level};
 
+/// Naive implementation of an orderbook to use as a benchmark
+/// This has no use other than benchmarking.
 #[derive(Debug, Default, Clone)]
 pub struct Orderbook {
     best_bid: Option<Level>,
@@ -33,6 +35,7 @@ impl Orderbook {
         };
 
         self.last_updated = event.timestamp;
+        self.last_sequence = event.seq;
     }
 
     pub fn process_stream_bbo(&mut self, event: Event) -> Option<(Option<Level>, Option<Level>)> {

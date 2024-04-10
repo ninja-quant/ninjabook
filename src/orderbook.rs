@@ -8,6 +8,7 @@ pub struct Orderbook {
     bids: BTreeMap<u64, Level>,
     asks: BTreeMap<u64, Level>,
     last_updated: u64,
+    last_sequence: u64,
     tick_size: f64,
 }
 
@@ -19,13 +20,14 @@ impl Orderbook {
             bids: BTreeMap::new(),
             asks: BTreeMap::new(),
             last_updated: 0,
+            last_sequence: 0,
             tick_size,
         }
     }
 
     #[inline]
     pub fn process(&mut self, event: Event) {
-        if event.timestamp < self.last_updated {
+        if event.timestamp < self.last_updated || event.seq < self.last_sequence {
             return;
         }
 
@@ -35,6 +37,7 @@ impl Orderbook {
         };
 
         self.last_updated = event.timestamp;
+        self.last_sequence = event.seq;
     }
 
     #[inline]
