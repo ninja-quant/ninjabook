@@ -3,18 +3,9 @@ use csv;
 use ninjabook::{event::Event, naive_orderbook::Orderbook as NaiveOrderbook, orderbook::Orderbook};
 
 #[inline]
-fn process_stream_bbo(mut ob: Orderbook, data: Vec<Event>) {
-    data.into_iter().for_each(|event| {
-        ob.process_stream_bbo(event);
-    });
-}
-
-#[inline]
 fn process_and_bbo(mut ob: Orderbook, data: Vec<Event>) {
     data.into_iter().for_each(|event| {
-        ob.process(event);
-        ob.best_bid();
-        ob.best_ask();
+        ob.process_stream_bbo(event);
     });
 }
 
@@ -28,18 +19,9 @@ fn process_and_top5(mut ob: Orderbook, data: Vec<Event>) {
 }
 
 #[inline]
-fn naive_process_stream_bbo(mut ob: NaiveOrderbook, data: Vec<Event>) {
-    data.into_iter().for_each(|event| {
-        ob.process_stream_bbo(event);
-    });
-}
-
-#[inline]
 fn naive_process_and_bbo(mut ob: NaiveOrderbook, data: Vec<Event>) {
     data.into_iter().for_each(|event| {
-        ob.process(event);
-        ob.best_bid();
-        ob.best_ask();
+        ob.process_stream_bbo(event);
     });
 }
 
@@ -64,11 +46,7 @@ fn bench_group(c: &mut Criterion) {
     for (i, result) in reader.deserialize::<Event>().enumerate() {
         let event = result.unwrap();
         match i {
-            0..=99_999 => {
-                ob.process(event);
-                naive_ob.process(event);
-            }
-            100_000..=199_999 => {
+            0..=199_999 => {
                 ob.process(event);
                 naive_ob.process(event);
             }
@@ -81,20 +59,12 @@ fn bench_group(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("bench");
 
-    group.bench_function("process_stream_bbo", |b| {
-        b.iter(|| process_stream_bbo(black_box(ob.clone()), black_box(data.clone())))
-    });
-
     group.bench_function("process_and_bbo", |b| {
         b.iter(|| process_and_bbo(black_box(ob.clone()), black_box(data.clone())))
     });
 
     group.bench_function("process_and_top5", |b| {
         b.iter(|| process_and_top5(black_box(ob.clone()), black_box(data.clone())))
-    });
-
-    group.bench_function("naive_process_stream_bbo", |b| {
-        b.iter(|| naive_process_stream_bbo(black_box(naive_ob.clone()), black_box(data.clone())))
     });
 
     group.bench_function("naive_process_and_bbo", |b| {
