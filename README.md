@@ -29,7 +29,7 @@ The scenarios are tested are:
 - Process event and stream top5 bids and asks
 
 Here are the results:
-|bench| iterations | time | time/iter |
+|bench| iterations | time | ns/iter |
 |--|--|--|--|
 | ninjabook_bbo | 100,000 | 3.9380 ms | 39.38 ns | 
 | naive_bbo | 100,000 | 263.77 ms | 2,637.7 ns | 
