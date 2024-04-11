@@ -8,6 +8,19 @@ pub struct Level {
     pub size: f64,
 }
 
+impl Level {
+    pub fn new(price: f64, size: f64) -> Self {
+        Self { price, size }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            price: f64::NAN,
+            size: f64::NAN,
+        }
+    }
+}
+
 impl PartialEq for Level {
     fn eq(&self, other: &Self) -> bool {
         self.price == other.price && self.size == other.size
@@ -37,10 +50,7 @@ mod tests {
 
     #[test]
     fn display_level() {
-        let level = Level {
-            price: 1.1,
-            size: 2.1,
-        };
+        let level = Level::new(1.1, 2.1);
 
         assert_eq!(format!("{}", level), "(1.1 : 2.1)")
     }

@@ -1,27 +1,34 @@
-use crate::{event::Event, level::Level};
-use std::collections::BTreeMap;
+use std::{hint::unreachable_unchecked, mem::replace};
 
-#[derive(Debug, Default, Clone)]
+use crate::{event::Event, level::Level};
+
+/// Implementation of an orderbook with fixed to use as a benchmark
+/// This has no use other than benchmarking.
+#[derive(Debug, Clone)]
 pub struct Orderbook {
     best_bid: Option<Level>,
     best_ask: Option<Level>,
-    bids: BTreeMap<u64, Level>,
-    asks: BTreeMap<u64, Level>,
+    bids: Buffer,
+    asks: Buffer,
     last_updated: u64,
     last_sequence: u64,
-    tick_size: f64,
+}
+
+impl Default for Orderbook {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Orderbook {
-    pub fn new(tick_size: f64) -> Self {
+    pub fn new() -> Self {
         Self {
             best_bid: None,
             best_ask: None,
-            bids: BTreeMap::new(),
-            asks: BTreeMap::new(),
+            bids: Buffer::new(),
+            asks: Buffer::new(),
             last_updated: 0,
             last_sequence: 0,
-            tick_size,
         }
     }
 
@@ -59,56 +66,42 @@ impl Orderbook {
 
     #[inline]
     fn process_lvl2(&mut self, event: Event) {
-        let price_ticks = event.price_ticks(self.tick_size);
         match event.is_buy {
             true => {
                 if event.size == 0.0 {
-                    if let Some(removed) = self.bids.remove(&price_ticks) {
+                    if let Ok(to_remove) = self.bids.find_index_bids(event.price) {
+                        let removed = self.bids.remove(to_remove);
                         if let Some(best_bid) = self.best_bid {
-                            if removed.price == best_bid.price {
-                                self.best_bid = self.bids.values().next_back().cloned();
+                            if removed == best_bid.price {
+                                self.best_bid = self.bids.first();
                             }
-                        };
+                        }
                     }
                 } else {
-                    self.bids
-                        .entry(price_ticks)
-                        .and_modify(|e| e.size = event.size)
-                        .or_insert(Level::from(event));
-
-                    let Some(best_bid) = self.best_bid else {
-                        self.best_bid = Some(Level::from(event));
-                        return;
-                    };
-
-                    if event.price >= best_bid.price {
-                        self.best_bid = Some(Level::from(event));
+                    match self.bids.find_index_bids(event.price) {
+                        Ok(to_modify) => self.bids.modify(to_modify, event.size),
+                        Err(to_insert) => self.bids.insert(to_insert, Level::from(event)),
                     }
+
+                    self.best_bid = self.bids.first();
                 }
             }
             false => {
                 if event.size == 0.0 {
-                    if let Some(removed) = self.asks.remove(&price_ticks) {
+                    if let Ok(to_remove) = self.asks.find_index_asks(event.price) {
+                        let removed = self.asks.remove(to_remove);
                         if let Some(best_ask) = self.best_ask {
-                            if removed.price == best_ask.price {
-                                self.best_ask = self.asks.values().next().cloned();
+                            if removed == best_ask.price {
+                                self.best_ask = self.asks.first();
                             }
-                        };
+                        }
                     }
                 } else {
-                    self.asks
-                        .entry(price_ticks)
-                        .and_modify(|e| e.size = event.size)
-                        .or_insert(Level::from(event));
-
-                    let Some(best_ask) = self.best_ask else {
-                        self.best_ask = Some(Level::from(event));
-                        return;
-                    };
-
-                    if event.price <= best_ask.price {
-                        self.best_ask = Some(Level::from(event));
+                    match self.asks.find_index_asks(event.price) {
+                        Ok(to_modify) => self.asks.modify(to_modify, event.size),
+                        Err(to_insert) => self.asks.insert(to_insert, Level::from(event)),
                     }
+                    self.best_ask = self.asks.first();
                 }
             }
         }
@@ -116,15 +109,19 @@ impl Orderbook {
 
     #[inline]
     fn process_trade(&mut self, event: Event) {
-        let buf = match event.is_buy {
-            true => &mut self.bids,
-            false => &mut self.asks,
-        };
-
-        let price_ticks = event.price_ticks(self.tick_size);
-        if let Some(level) = buf.get_mut(&price_ticks) {
+        if event.is_buy {
+            if let Ok(index) = self.bids.find_index_bids(event.price) {
+                let level = self.bids.get_mut(index);
+                if event.size >= level.size {
+                    self.bids.remove(index);
+                } else {
+                    level.size -= event.size;
+                }
+            };
+        } else if let Ok(index) = self.asks.find_index_asks(event.price) {
+            let level = self.asks.get_mut(index);
             if event.size >= level.size {
-                buf.remove(&price_ticks);
+                self.asks.remove(index);
             } else {
                 level.size -= event.size;
             }
@@ -141,12 +138,34 @@ impl Orderbook {
 
     #[inline]
     pub fn top_bids(&self, n: usize) -> Vec<Level> {
-        self.bids.values().rev().take(n).cloned().collect()
+        let mut result = Vec::with_capacity(n);
+
+        for level in self.bids.buf.iter() {
+            if !level.price.is_nan() {
+                result.push(*level);
+            }
+            if result.len() == n {
+                break;
+            }
+        }
+
+        result
     }
 
     #[inline]
     pub fn top_asks(&self, n: usize) -> Vec<Level> {
-        self.asks.values().take(n).cloned().collect()
+        let mut result = Vec::with_capacity(n);
+
+        for level in self.asks.buf.iter() {
+            if !level.price.is_nan() {
+                result.push(*level);
+            }
+            if result.len() == n {
+                break;
+            }
+        }
+
+        result
     }
 
     #[inline]
@@ -170,13 +189,152 @@ impl Orderbook {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Buffer {
+    buf: [Level; 100],
+}
+
+impl Default for Buffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Buffer {
+    pub fn new() -> Self {
+        Self {
+            buf: [Level::empty(); 100],
+        }
+    }
+
+    #[inline]
+    pub fn find_index_bids(&self, target: f64) -> Result<usize, usize> {
+        let mut size = self.buf.len();
+        let mut left = 0;
+        let mut right = size;
+
+        while left < right {
+            let mid = left + size / 4;
+            let cur = self.get(mid);
+
+            if target > cur.price || cur.price.is_nan() {
+                right = mid;
+            } else if target < cur.price {
+                left = mid + 1;
+            } else {
+                if mid >= self.buf.len() {
+                    unsafe { unreachable_unchecked() }
+                }
+                return Ok(mid);
+            }
+
+            size = right - left;
+        }
+        if left > self.buf.len() {
+            unsafe { unreachable_unchecked() }
+        }
+        Err(left)
+    }
+
+    #[inline]
+    pub fn find_index_asks(&self, target: f64) -> Result<usize, usize> {
+        let mut size = self.buf.len();
+        let mut left = 0;
+        let mut right = size;
+
+        while left < right {
+            let mid = left + size / 4;
+            let cur = self.get(mid);
+
+            if target < cur.price || cur.price.is_nan() {
+                right = mid;
+            } else if target > cur.price {
+                left = mid + 1;
+            } else {
+                if mid >= self.buf.len() {
+                    unsafe { unreachable_unchecked() }
+                }
+                return Ok(mid);
+            }
+
+            size = right - left;
+        }
+        if left > self.buf.len() {
+            unsafe { unreachable_unchecked() }
+        }
+        Err(left)
+    }
+
+    #[inline]
+    fn move_back(&mut self, start: usize) {
+        let mut next = start + 1;
+        while next < self.buf.len() {
+            let lvl = self.get(next);
+            if lvl.price.is_nan() {
+                break;
+            }
+            self.buf.swap(next - 1, next);
+
+            next += 1;
+        }
+    }
+
+    #[inline]
+    pub fn remove(&mut self, index: usize) -> f64 {
+        let level = self.get_mut(index);
+        let removed = level.price;
+        level.price = f64::NAN;
+
+        self.move_back(index);
+        removed
+    }
+
+    pub fn first(&self) -> Option<Level> {
+        let level = self.get(0);
+        if level.price != 0.0 {
+            return Some(*level);
+        }
+        None
+    }
+
+    pub fn get(&self, index: usize) -> &Level {
+        unsafe { self.buf.get_unchecked(index) }
+    }
+
+    pub fn get_mut(&mut self, index: usize) -> &mut Level {
+        unsafe { self.buf.get_unchecked_mut(index) }
+    }
+
+    pub fn insert(&mut self, index: usize, level: Level) {
+        let to_replace = self.get_mut(index);
+        let mut replaced = replace(to_replace, level);
+
+        let mut next = index + 1;
+
+        while next < self.buf.len() {
+            if replaced.price.is_nan() {
+                break;
+            }
+
+            replaced = replace(self.get_mut(next), replaced);
+
+            next += 1;
+        }
+    }
+
+    pub fn modify(&mut self, index: usize, size: f64) {
+        let level = self.get_mut(index);
+        level.size = size;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn process_lvl2_bids() {
-        let mut ob = Orderbook::new(0.01);
+        let mut ob = Orderbook::new();
 
         let event = Event {
             timestamp: 0,
@@ -496,7 +654,7 @@ mod tests {
 
     #[test]
     fn process_lvl2_asks() {
-        let mut ob = Orderbook::new(0.01);
+        let mut ob = Orderbook::new();
 
         let event = Event {
             timestamp: 0,
@@ -743,7 +901,7 @@ mod tests {
 
     #[test]
     fn process_all_asks() {
-        let mut ob = Orderbook::new(0.01);
+        let mut ob = Orderbook::new();
 
         let event = Event {
             timestamp: 0,
@@ -830,7 +988,7 @@ mod tests {
 
     #[test]
     fn old_event() {
-        let mut ob = Orderbook::new(0.01);
+        let mut ob = Orderbook::new();
 
         let event = Event {
             timestamp: 0,
@@ -883,7 +1041,7 @@ mod tests {
 
     #[test]
     fn process_stream_bbo() {
-        let mut ob = Orderbook::new(0.01);
+        let mut ob = Orderbook::new();
 
         let event = Event {
             timestamp: 0,
@@ -959,7 +1117,7 @@ mod tests {
 
     #[test]
     fn remove_non_existing_level_with_trade() {
-        let mut ob = Orderbook::new(0.01);
+        let mut ob = Orderbook::new();
 
         let event = Event {
             timestamp: 0,
@@ -1024,7 +1182,7 @@ mod tests {
 
     #[test]
     fn midprice() {
-        let mut ob = Orderbook::new(0.01);
+        let mut ob = Orderbook::new();
 
         let event = Event {
             timestamp: 0,
@@ -1057,7 +1215,7 @@ mod tests {
 
     #[test]
     fn weighted_midprice() {
-        let mut ob = Orderbook::new(0.01);
+        let mut ob = Orderbook::new();
 
         let event = Event {
             timestamp: 0,

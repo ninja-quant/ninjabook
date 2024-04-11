@@ -133,11 +133,11 @@ impl Orderbook {
         self.best_ask
     }
 
-    pub fn top_n_bids(&self, n: usize) -> Vec<Level> {
+    pub fn top_bids(&self, n: usize) -> Vec<Level> {
         self.bids.iter().rev().take(n).cloned().collect()
     }
 
-    pub fn top_n_asks(&self, n: usize) -> Vec<Level> {
+    pub fn top_asks(&self, n: usize) -> Vec<Level> {
         self.asks.iter().take(n).cloned().collect()
     }
 
@@ -180,7 +180,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [Level {
                 price: 16.0,
                 size: 1.0
@@ -198,7 +198,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 16.0,
@@ -222,7 +222,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 16.0,
@@ -250,7 +250,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 16.0,
@@ -282,7 +282,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 16.0,
@@ -314,7 +314,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 16.0,
@@ -350,7 +350,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 21.0,
@@ -386,7 +386,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 21.0,
@@ -422,7 +422,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 21.0,
@@ -458,7 +458,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_bids(5),
+            ob.top_bids(5),
             [
                 Level {
                     price: 16.0,
@@ -499,7 +499,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(5),
+            ob.top_asks(5),
             [Level {
                 price: 16.0,
                 size: 1.0
@@ -517,7 +517,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(5),
+            ob.top_asks(5),
             [
                 Level {
                     price: 7.0,
@@ -541,7 +541,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(5),
+            ob.top_asks(5),
             [
                 Level {
                     price: 7.0,
@@ -569,7 +569,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(5),
+            ob.top_asks(5),
             [
                 Level {
                     price: 6.0,
@@ -601,7 +601,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(5),
+            ob.top_asks(5),
             [
                 Level {
                     price: 6.0,
@@ -637,7 +637,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(5),
+            ob.top_asks(5),
             [
                 Level {
                     price: 6.0,
@@ -673,7 +673,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(5),
+            ob.top_asks(5),
             [
                 Level {
                     price: 7.0,
@@ -709,7 +709,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(5),
+            ob.top_asks(5),
             [
                 Level {
                     price: 7.0,
@@ -776,7 +776,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(3),
+            ob.top_asks(3),
             [
                 Level {
                     price: 9.0,
@@ -804,7 +804,7 @@ mod tests {
         ob.process(event);
 
         assert_eq!(
-            ob.top_n_asks(3),
+            ob.top_asks(3),
             [
                 Level {
                     price: 10.0,
