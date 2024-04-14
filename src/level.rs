@@ -1,6 +1,6 @@
-use std::fmt::Display;
-
 use crate::event::Event;
+use std::cmp::Ordering;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Level {
@@ -13,11 +13,34 @@ impl Level {
         Self { price, size }
     }
 
-    pub fn empty() -> Self {
+    pub fn minimum() -> Self {
         Self {
-            price: f64::NAN,
-            size: f64::NAN,
+            price: f64::MIN,
+            size: 0.0,
         }
+    }
+
+    pub fn maximum() -> Self {
+        Self {
+            price: f64::MAX,
+            size: 0.0,
+        }
+    }
+}
+
+#[allow(clippy::non_canonical_partial_ord_impl)]
+impl PartialOrd for Level {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self.price.partial_cmp(&other.price) {
+            Some(Ordering::Equal) => self.size.partial_cmp(&other.size),
+            other_order => other_order,
+        }
+    }
+}
+
+impl Ord for Level {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
     }
 }
 

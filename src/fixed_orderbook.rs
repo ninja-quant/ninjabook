@@ -2,7 +2,7 @@ use std::{hint::unreachable_unchecked, mem::replace};
 
 use crate::{event::Event, level::Level};
 
-/// Implementation of an orderbook with fixed to use as a benchmark
+/// Implementation of an orderbook with fixed size to use as a benchmark
 /// This has no use other than benchmarking.
 #[derive(Debug, Clone)]
 pub struct Orderbook {
@@ -25,8 +25,8 @@ impl Orderbook {
         Self {
             best_bid: None,
             best_ask: None,
-            bids: Buffer::new(),
-            asks: Buffer::new(),
+            bids: Buffer::new(true),
+            asks: Buffer::new(false),
             last_updated: 0,
             last_sequence: 0,
         }
@@ -141,11 +141,11 @@ impl Orderbook {
         let mut result = Vec::with_capacity(n);
 
         for level in self.bids.buf.iter() {
-            if !level.price.is_nan() {
-                result.push(*level);
-            }
             if result.len() == n {
                 break;
+            }
+            if level.price != self.bids.limit {
+                result.push(*level);
             }
         }
 
@@ -157,11 +157,11 @@ impl Orderbook {
         let mut result = Vec::with_capacity(n);
 
         for level in self.asks.buf.iter() {
-            if !level.price.is_nan() {
-                result.push(*level);
-            }
             if result.len() == n {
                 break;
+            }
+            if level.price != self.asks.limit {
+                result.push(*level);
             }
         }
 
@@ -191,19 +191,19 @@ impl Orderbook {
 
 #[derive(Debug, Clone)]
 pub struct Buffer {
-    buf: [Level; 100],
-}
-
-impl Default for Buffer {
-    fn default() -> Self {
-        Self::new()
-    }
+    buf: [Level; 500],
+    limit: f64,
 }
 
 impl Buffer {
-    pub fn new() -> Self {
+    pub fn new(is_bid: bool) -> Self {
         Self {
-            buf: [Level::empty(); 100],
+            buf: if is_bid {
+                [Level::minimum(); 500]
+            } else {
+                [Level::maximum(); 500]
+            },
+            limit: if is_bid { f64::MIN } else { f64::MAX },
         }
     }
 
@@ -217,7 +217,7 @@ impl Buffer {
             let mid = left + size / 4;
             let cur = self.get(mid);
 
-            if target > cur.price || cur.price.is_nan() {
+            if target > cur.price || cur.price == self.limit {
                 right = mid;
             } else if target < cur.price {
                 left = mid + 1;
@@ -246,7 +246,7 @@ impl Buffer {
             let mid = left + size / 4;
             let cur = self.get(mid);
 
-            if target < cur.price || cur.price.is_nan() {
+            if target < cur.price || cur.price == self.limit {
                 right = mid;
             } else if target > cur.price {
                 left = mid + 1;
@@ -268,9 +268,10 @@ impl Buffer {
     #[inline]
     fn move_back(&mut self, start: usize) {
         let mut next = start + 1;
+
         while next < self.buf.len() {
             let lvl = self.get(next);
-            if lvl.price.is_nan() {
+            if lvl.price == self.limit {
                 break;
             }
             self.buf.swap(next - 1, next);
@@ -281,20 +282,21 @@ impl Buffer {
 
     #[inline]
     pub fn remove(&mut self, index: usize) -> f64 {
+        let na = self.limit;
         let level = self.get_mut(index);
         let removed = level.price;
-        level.price = f64::NAN;
+        level.price = na;
+        level.size = 0.0;
 
         self.move_back(index);
+
         removed
     }
 
     pub fn first(&self) -> Option<Level> {
-        let level = self.get(0);
-        if level.price != 0.0 {
-            return Some(*level);
-        }
-        None
+        self.buf
+            .into_iter()
+            .find(|&level| level.price != self.limit)
     }
 
     pub fn get(&self, index: usize) -> &Level {
@@ -306,13 +308,18 @@ impl Buffer {
     }
 
     pub fn insert(&mut self, index: usize, level: Level) {
+        if index >= self.buf.len() {
+            return;
+        }
         let to_replace = self.get_mut(index);
         let mut replaced = replace(to_replace, level);
-
+        if replaced.price == self.limit {
+            return;
+        }
         let mut next = index + 1;
 
         while next < self.buf.len() {
-            if replaced.price.is_nan() {
+            if replaced.price == self.limit {
                 break;
             }
 
@@ -323,6 +330,9 @@ impl Buffer {
     }
 
     pub fn modify(&mut self, index: usize, size: f64) {
+        if index >= self.buf.len() {
+            return;
+        }
         let level = self.get_mut(index);
         level.size = size;
     }

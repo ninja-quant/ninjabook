@@ -60,6 +60,7 @@ impl Orderbook {
                 if event.size == 0.0 {
                     if let Some(index) = self.bids.iter().position(|x| x.price == event.price) {
                         self.bids.remove(index);
+                        self.best_bid = self.bids.last().cloned();
                     };
                 } else {
                     if let Some(level) = self.bids.iter_mut().find(|x| x.price == event.price) {
@@ -68,23 +69,16 @@ impl Orderbook {
                         self.bids.push(Level::from(event));
                     }
 
-                    let Some(best_bid) = self.best_bid else {
-                        self.best_bid = Some(Level::from(event));
-                        return;
-                    };
+                    self.bids.sort_unstable();
 
-                    if event.price >= best_bid.price {
-                        self.best_bid = Some(Level::from(event));
-                    }
-
-                    self.bids
-                        .sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap());
+                    self.best_bid = self.bids.last().cloned();
                 }
             }
             false => {
                 if event.size == 0.0 {
                     if let Some(index) = self.asks.iter().position(|x| x.price == event.price) {
                         self.asks.remove(index);
+                        self.best_ask = self.asks.first().cloned();
                     };
                 } else {
                     if let Some(level) = self.asks.iter_mut().find(|x| x.price == event.price) {
@@ -93,17 +87,9 @@ impl Orderbook {
                         self.asks.push(Level::from(event));
                     }
 
-                    let Some(best_ask) = self.best_ask else {
-                        self.best_ask = Some(Level::from(event));
-                        return;
-                    };
+                    self.asks.sort_unstable();
 
-                    if event.price <= best_ask.price {
-                        self.best_ask = Some(Level::from(event));
-                    }
-
-                    self.asks
-                        .sort_by(|a, b| a.price.partial_cmp(&b.price).unwrap());
+                    self.best_ask = self.asks.first().cloned();
                 }
             }
         }

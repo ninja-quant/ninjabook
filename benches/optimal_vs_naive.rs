@@ -59,6 +59,7 @@ fn bench_group(c: &mut Criterion) {
     let mut data = Vec::new();
 
     let tick_size = 0.01;
+
     let mut ob = Orderbook::new(tick_size);
     let mut naive_ob = NaiveOrderbook::new();
     let mut fixed_ob = FixedOrderbook::new();
@@ -70,6 +71,16 @@ fn bench_group(c: &mut Criterion) {
                 ob.process(event);
                 naive_ob.process(event);
                 fixed_ob.process(event);
+
+                assert_eq!(ob.top_asks(5), fixed_ob.top_asks(5));
+                assert_eq!(ob.top_bids(5), fixed_ob.top_bids(5));
+                assert_eq!(ob.top_bids(5), naive_ob.top_bids(5));
+                assert_eq!(ob.top_asks(5), naive_ob.top_asks(5));
+
+                assert_eq!(ob.best_bid(), fixed_ob.best_bid());
+                assert_eq!(ob.best_ask(), fixed_ob.best_ask());
+                assert_eq!(ob.best_bid(), naive_ob.best_bid());
+                assert_eq!(ob.best_ask(), naive_ob.best_ask());
             }
             200_000..=299_999 => data.push(event),
             _ => break,

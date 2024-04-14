@@ -9,7 +9,7 @@ pub struct Orderbook {
     asks: BTreeMap<u64, Level>,
     last_updated: u64,
     last_sequence: u64,
-    tick_size: f64,
+    inv_tick_size: f64,
 }
 
 impl Orderbook {
@@ -21,7 +21,7 @@ impl Orderbook {
             asks: BTreeMap::new(),
             last_updated: 0,
             last_sequence: 0,
-            tick_size,
+            inv_tick_size: 1.0 / tick_size,
         }
     }
 
@@ -59,7 +59,7 @@ impl Orderbook {
 
     #[inline]
     fn process_lvl2(&mut self, event: Event) {
-        let price_ticks = event.price_ticks(self.tick_size);
+        let price_ticks = event.price_ticks(self.inv_tick_size);
         match event.is_buy {
             true => {
                 if event.size == 0.0 {
@@ -121,7 +121,8 @@ impl Orderbook {
             false => &mut self.asks,
         };
 
-        let price_ticks = event.price_ticks(self.tick_size);
+        let price_ticks = event.price_ticks(self.inv_tick_size);
+
         if let Some(level) = buf.get_mut(&price_ticks) {
             if event.size >= level.size {
                 buf.remove(&price_ticks);

@@ -17,7 +17,7 @@ pub struct Event {
 
 impl Event {
     pub fn price_ticks(&self, tick_size: f64) -> u64 {
-        (self.price / tick_size) as u64
+        (self.price * tick_size) as u64
     }
 }
 

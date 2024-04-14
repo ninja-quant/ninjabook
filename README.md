@@ -31,14 +31,12 @@ The scenarios tested are:
 Here are the results:
 |bench| iterations | time | ns/iter |
 |--|--|--|--|
-| ninjabook_bbo | 100,000 | 9.1093 ms | 91.093 ns | 
-| fixed_100_bbo | 100,000 | 14.253 ms | 142.53 ns | 
-| fixed_500_bbo | 100,000 | 72.636 ms | 726.36 ns | 
-| naive_bbo | 100,000 | 263.77 ms | 2,637.7 ns | 
-| ninjabook_top5 | 100,000 | 16.729 ms | 167.29 ns | 
-| fixed_100_top5 | 100,000 | 23.532 ms | 235.32 ns | 
-| fixed_100_top5 | 100,000 | 81.112 ms | 811.12 ns | 
-| naive_top5 | 100,000 | 275.40 ms | 2,754 ns | 
+| ninjabook_bbo | 100,000 | 5.0108 ms | 50.108 ns | 
+| fixed_500_bbo | 100,000 | 49.018 ms | 490.18 ns | 
+| naive_bbo | 100,000 | 90.552 ms | 905.52 ns | 
+| ninjabook_top5 | 100,000 | 11.797 ms | 117.97 ns | 
+| fixed_500_top5 | 100,000 | 54.693 ms | 546.93 ns | 
+| naive_top5 | 100,000 | 95.644 ms | 956.44 ns | 
 
 # Contributing
 To add a better version, create a new file, implementing the same methods as `orderbook.rs` (including tests) and add the improved orderbook to the bench `optimal_vs_naive.rs`. Only order books with a better performance than `orderbook.rs` will be considered. Lastly, add performance logs to the Pull Request, can just copy paste what `cargo bench` outputs.
