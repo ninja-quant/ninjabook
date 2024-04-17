@@ -1,6 +1,6 @@
 [package]
 name = "ninjabook"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 summary = "A lightweight and high performance orderbook"
 homepage = "https://github.com/ninja-quant/ninjabook"
