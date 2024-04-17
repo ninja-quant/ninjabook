@@ -1,5 +1,3 @@
-pub mod level;
-
 use pyo3::prelude::*;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -158,7 +156,7 @@ impl Orderbook {
 
     #[getter]
     pub fn best_bid(&self) -> Option<Level> {
-        Ok(self.best_bid)
+        self.best_bid
     }
 
     #[getter]
@@ -168,21 +166,21 @@ impl Orderbook {
 
     #[inline]
     pub fn top_bids(&self, n: usize) -> Vec<Level> {
-        Ok(self.bids.values().rev().take(n).cloned().collect())
+        self.bids.values().rev().take(n).cloned().collect()
     }
 
     #[inline]
     pub fn top_asks(&self, n: usize) -> Vec<Level> {
-        Ok(self.asks.values().take(n).cloned().collect())
+        self.asks.values().take(n).cloned().collect()
     }
 
     #[inline]
     pub fn midprice(&self) -> Option<f64> {
         if let (Some(best_bid), Some(best_ask)) = (self.best_bid, self.best_ask) {
-            return Ok(Some((best_bid.price + best_ask.price) / 2.0));
+            return Some((best_bid.price + best_ask.price) / 2.0);
         }
 
-        Ok(None)
+        None
     }
 
     #[inline]
@@ -190,10 +188,10 @@ impl Orderbook {
         if let (Some(best_bid), Some(best_ask)) = (self.best_bid, self.best_ask) {
             let num = best_bid.size * best_ask.price + best_bid.price * best_ask.size;
             let den = best_bid.size + best_ask.size;
-            return Ok(Some(num / den));
+            return Some(num / den);
         }
 
-        Ok(None)
+        None
     }
 }
 

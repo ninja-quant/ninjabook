@@ -26,5 +26,5 @@ debug = true
 [profile.release]
 codegen-units = 1
 debug = true
-lto = false
+lto = "fat"
 panic = "abort"
