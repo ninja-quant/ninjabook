@@ -1,6 +1,7 @@
 
 # ninjabook
 
+[![Pypi][pypi-badge]][pypi-url]
 [![Crates.io][crates-badge]][crates-url]
 [![Documentation][doc-badge]][doc-url]
 [![MIT licensed][mit-badge]][mit-url]
@@ -8,6 +9,8 @@
 
 [crates-badge]: https://img.shields.io/crates/v/ninjabook.svg
 [crates-url]: https://crates.io/crates/ninjabook
+[pypi-badge]: https://img.shields.io/pypi/v/ninjabook.svg
+[pypi-url]: https://pypi.org/project/ninjabook
 [mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
 [mit-url]: https://github.com/ninja-quant/ninjabook/blob/main/LICENSE
 [doc-badge]: https://docs.rs/ninjabook/badge.svg
@@ -15,7 +18,13 @@
 [rust-badge]: https://shields.io/badge/rust-1.77.2%2B-blue.svg
 [rust-url]: https://github.com/ninja-quant/ninjabook
 
-A lightweight and high-performance order-book designed to process level 2 and trades data.
+A lightweight and high-performance order-book implemented in Rust, designed to process level 2 and trades data. 
+
+Available in Python and Rust!
+
+# Getting started
+
+Find Python and Rust `hello_world` programs in the `examples` directory.
 
 # Performance
 Ran a couple of benchmarks showcasing real case scenarios against a naive `Vec` implementation and an orderbook with a fixed size of 500 levels.
@@ -43,3 +52,6 @@ To add a better version, create a new file, implementing the same methods as `or
 
 
 Any issues, refactoring, docs and tests are also welcomed. Feel free to reach out [here](https://twitter.com/ninjaquant_) if you have any questions.
+
+# Caveats
+Just some cosmetic improvements need to be done. Refactor `Orderbook` core functions into a `Trait`, add docs and potentially more tests/bench/examples.
