@@ -26,6 +26,50 @@ impl Orderbook {
     }
 
     #[inline]
+    pub fn process_raw(
+        &mut self,
+        timestamp: u64,
+        seq: u64,
+        is_trade: bool,
+        is_buy: bool,
+        price: f64,
+        size: f64,
+    ) {
+        let event = Event {
+            timestamp,
+            seq,
+            is_trade,
+            is_buy,
+            price,
+            size,
+        };
+
+        self.process(event);
+    }
+
+    #[inline]
+    pub fn process_stream_bbo_raw(
+        &mut self,
+        timestamp: u64,
+        seq: u64,
+        is_trade: bool,
+        is_buy: bool,
+        price: f64,
+        size: f64,
+    ) -> Option<(Option<Level>, Option<Level>)> {
+        let event = Event {
+            timestamp,
+            seq,
+            is_trade,
+            is_buy,
+            price,
+            size,
+        };
+
+        self.process_stream_bbo(event)
+    }
+
+    #[inline]
     pub fn process(&mut self, event: Event) {
         if event.timestamp < self.last_updated || event.seq < self.last_sequence {
             return;

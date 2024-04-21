@@ -9,6 +9,22 @@ fn main() {
 
     while let Some(Ok(event)) = rdr.next() {
         ob.process(event);
-        println!("{:?} - {:?}", ob.best_bid(), ob.best_ask());
+
+        // or if its a raw event
+        // ob.process_raw(
+        //     event.timestamp,
+        //     event.seq,
+        //     event.is_trade,
+        //     event.is_buy,
+        //     event.price,
+        //     event.size,
+        // );
+
+        println!(
+            "{:?} -- {:?} -- {:?}",
+            ob.best_bid(),
+            ob.midprice(),
+            ob.best_ask()
+        );
     }
 }
