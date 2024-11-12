@@ -1,5 +1,4 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use csv;
 use ninjabook::{
     event::Event, fixed_orderbook::Orderbook as FixedOrderbook,
     naive_orderbook::Orderbook as NaiveOrderbook, orderbook::Orderbook,

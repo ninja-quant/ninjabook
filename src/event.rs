@@ -16,8 +16,8 @@ pub struct Event {
 }
 
 impl Event {
-    pub fn price_ticks(&self, tick_size: f64) -> u64 {
-        (self.price * tick_size) as u64
+    pub fn price_ticks(&self, inv_tick_size: f64) -> u64 {
+        (self.price * inv_tick_size) as u64
     }
 }
 
@@ -136,8 +136,8 @@ mod tests {
 
         assert_eq!(event.timestamp, 1575158405045139);
         assert_eq!(event.seq, 0);
-        assert_eq!(event.is_trade, false);
-        assert_eq!(event.is_buy, false);
+        assert!(!event.is_trade);
+        assert!(!event.is_buy);
         assert_eq!(event.price, 7541.38);
         assert_eq!(event.size, 0.085806);
     }
@@ -153,6 +153,6 @@ mod tests {
             size: 1.0,
         };
 
-        assert_eq!(event.price_ticks(0.01), 1000);
+        assert_eq!(event.price_ticks(1.0 / 0.01), 1000);
     }
 }

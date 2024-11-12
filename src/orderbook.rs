@@ -71,7 +71,7 @@ impl Orderbook {
 
     #[inline]
     pub fn process(&mut self, event: Event) {
-        if event.timestamp < self.last_updated || event.seq < self.last_sequence {
+        if event.timestamp < self.last_updated && event.seq < self.last_sequence {
             return;
         }
 
@@ -889,7 +889,7 @@ mod tests {
 
         let event = Event {
             timestamp: 1,
-            seq: 0,
+            seq: 1,
             is_trade: false,
             is_buy: false,
             price: 10.0,
